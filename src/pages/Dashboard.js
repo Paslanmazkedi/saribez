@@ -16,7 +16,6 @@ function getTodayStr() {
 export default function Dashboard({ user, home }) {
   const [tasks, setTasks] = useState([])
   const [completions, setCompletions] = useState([])
-  const [members, setMembers] = useState([])
   const [profiles, setProfiles] = useState({})
   const [currentDay, setCurrentDay] = useState(getTodayIndex())
   const [showAddTask, setShowAddTask] = useState(false)
@@ -32,7 +31,7 @@ export default function Dashboard({ user, home }) {
   // eslint-disable-next-line
   useEffect(() => {
     loadAll()
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadAll() {
     setLoading(true)
@@ -67,7 +66,6 @@ export default function Dashboard({ user, home }) {
       const profileMap = {}
       profilesData?.forEach(p => profileMap[p.id] = p)
       setProfiles(profileMap)
-      setMembers(membersData)
     }
 
     setTasks(tasksData || [])
