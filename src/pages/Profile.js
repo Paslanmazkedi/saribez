@@ -26,6 +26,7 @@ export default function Profile({ user, home, onBack, onThemeChange, currentThem
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [saving, setSaving] = useState(false)
   const [leaving, setLeaving] = useState(false)
+  const [saveMsg, setSaveMsg] = useState('')
 
   useEffect(() => { loadAll() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -37,6 +38,7 @@ export default function Profile({ user, home, onBack, onThemeChange, currentThem
       .select('*')
       .eq('id', user.id)
       .single()
+
     setProfile(profileData)
     setNewName(profileData?.display_name || '')
 
@@ -66,15 +68,29 @@ export default function Profile({ user, home, onBack, onThemeChange, currentThem
   async function saveName() {
     if (!newName.trim()) return
     setSaving(true)
-    await supabase.from('profiles').upsert({ id: user.id, display_name: newName })
-    setProfile(prev => ({ ...prev, display_name: newName }))
-    setEditingName(false)
+    const { error } = await supabase
+      .from('profiles')
+      .update({ display_name: newName })
+      .eq('id', user.id)
+    if (!error) {
+      setProfile(prev => ({ ...prev, display_name: newName }))
+      setEditingName(false)
+      setSaveMsg('✓ İsim kaydedildi')
+      setTimeout(() => setSaveMsg(''), 2000)
+    }
     setSaving(false)
   }
 
   async function saveEmoji(emoji) {
-    await supabase.from('profiles').upsert({ id: user.id, avatar_emoji: emoji })
-    setProfile(prev => ({ ...prev, avatar_emoji: emoji }))
+    const { error } = await supabase
+      .from('profiles')
+      .update({ avatar_emoji: emoji })
+      .eq('id', user.id)
+    if (!error) {
+      setProfile(prev => ({ ...prev, avatar_emoji: emoji }))
+      setSaveMsg('✓ Avatar kaydedildi')
+      setTimeout(() => setSaveMsg(''), 2000)
+    }
     setShowEmojiPicker(false)
   }
 
@@ -107,6 +123,13 @@ export default function Profile({ user, home, onBack, onThemeChange, currentThem
         <div style={{ width: 36 }} />
       </div>
 
+      {/* Kayıt mesajı */}
+      {saveMsg && (
+        <div style={{ ...styles.saveMsg, background: theme.primary }}>
+          {saveMsg}
+        </div>
+      )}
+
       {/* Avatar + İsim */}
       <div style={{ ...styles.avatarSection, borderColor: theme.primary + '33' }}>
         <div
@@ -124,7 +147,10 @@ export default function Profile({ user, home, onBack, onThemeChange, currentThem
               {EMOJIS.map(e => (
                 <button
                   key={e}
-                  style={{ ...styles.emojiBtn, ...(e === myEmoji ? { ...styles.emojiBtnActive, background: theme.primary + '33', borderColor: theme.primary } : {}) }}
+                  style={{
+                    ...styles.emojiBtn,
+                    ...(e === myEmoji ? { background: theme.primary + '33', borderColor: theme.primary } : {})
+                  }}
                   onClick={() => saveEmoji(e)}
                 >
                   {e}
@@ -184,7 +210,6 @@ export default function Profile({ user, home, onBack, onThemeChange, currentThem
               Davet: {home.invite_code}
             </span>
           </div>
-
           {otherMembers.length > 0 && (
             <div style={styles.membersSection}>
               <span style={styles.membersLabel}>Ev arkadaşları</span>
@@ -241,91 +266,35 @@ export default function Profile({ user, home, onBack, onThemeChange, currentThem
 }
 
 const styles = {
-  container: {
-    minHeight: '100vh',
-    fontFamily: "'Segoe UI', sans-serif",
-    paddingBottom: 40,
-  },
-  header: {
-    padding: '16px 20px',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    color: 'white',
-  },
-  backBtn: {
-    background: 'rgba(255,255,255,0.15)',
-    border: 'none', color: 'white',
-    width: 36, height: 36, borderRadius: 10,
-    fontSize: 18, cursor: 'pointer',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-  },
+  container: { minHeight: '100vh', fontFamily: "'Segoe UI', sans-serif", paddingBottom: 40 },
+  header: { padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: 'white' },
+  backBtn: { background: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', width: 36, height: 36, borderRadius: 10, fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   headerTitle: { fontSize: 17, fontWeight: 700 },
-  avatarSection: {
-    display: 'flex', flexDirection: 'column', alignItems: 'center',
-    padding: '32px 24px 24px',
-    borderBottom: '1.5px solid',
-    position: 'relative',
-  },
-  avatarBig: {
-    width: 100, height: 100, borderRadius: '50%',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    border: '3px solid', cursor: 'pointer',
-    position: 'relative', marginBottom: 16,
-    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
-  },
+  saveMsg: { color: 'white', textAlign: 'center', padding: '10px', fontSize: 14, fontWeight: 600 },
+  avatarSection: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '32px 24px 24px', borderBottom: '1.5px solid', position: 'relative' },
+  avatarBig: { width: 100, height: 100, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '3px solid', cursor: 'pointer', position: 'relative', marginBottom: 16, boxShadow: '0 4px 20px rgba(0,0,0,0.08)' },
   avatarEmoji: { fontSize: 52 },
-  editBadge: {
-    position: 'absolute', bottom: 2, right: 2,
-    width: 26, height: 26, borderRadius: '50%',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: 12,
-  },
-  emojiPicker: {
-    background: 'white', borderRadius: 16,
-    padding: '16px', marginBottom: 16,
-    boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-    border: '1px solid #eee',
-    width: '100%', maxWidth: 320,
-  },
+  editBadge: { position: 'absolute', bottom: 2, right: 2, width: 26, height: 26, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 },
+  emojiPicker: { background: 'white', borderRadius: 16, padding: '16px', marginBottom: 16, boxShadow: '0 8px 32px rgba(0,0,0,0.12)', border: '1px solid #eee', width: '100%', maxWidth: 320 },
   emojiPickerTitle: { fontSize: 13, color: '#999', margin: '0 0 10px', textAlign: 'center' },
   emojiGrid: { display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'center' },
-  emojiBtn: {
-    fontSize: 26, background: '#F5F5F5',
-    border: '2px solid transparent', borderRadius: 10,
-    width: 44, height: 44, cursor: 'pointer',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-  },
-  emojiBtnActive: { border: '2px solid' },
+  emojiBtn: { fontSize: 26, background: '#F5F5F5', border: '2px solid transparent', borderRadius: 10, width: 44, height: 44, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' },
   nameRow: { display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 },
   nameText: { fontSize: 22, fontWeight: 700, color: '#1a1a2e' },
   editNameBtn: { fontSize: 13, background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 },
   emailText: { fontSize: 13, color: '#999' },
   nameEdit: { display: 'flex', flexDirection: 'column', gap: 8, width: '100%', maxWidth: 280, marginBottom: 4 },
-  nameInput: {
-    padding: '10px 14px', borderRadius: 10,
-    border: '2px solid', fontSize: 16,
-    outline: 'none', textAlign: 'center', fontWeight: 600,
-  },
+  nameInput: { padding: '10px 14px', borderRadius: 10, border: '2px solid', fontSize: 16, outline: 'none', textAlign: 'center', fontWeight: 600 },
   nameEditBtns: { display: 'flex', gap: 8 },
   saveNameBtn: { flex: 1, padding: '10px', borderRadius: 10, border: 'none', color: 'white', fontWeight: 700, cursor: 'pointer', fontSize: 14 },
   cancelNameBtn: { flex: 1, padding: '10px', borderRadius: 10, border: '1.5px solid #eee', background: 'white', color: '#999', cursor: 'pointer', fontSize: 14 },
   statsRow: { display: 'flex', gap: 12, padding: '20px 20px 0' },
-  statCard: {
-    flex: 1, background: 'white', borderRadius: 16,
-    padding: '16px', border: '1.5px solid',
-    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-  },
+  statCard: { flex: 1, background: 'white', borderRadius: 16, padding: '16px', border: '1.5px solid', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
   statNumber: { fontSize: 32, fontWeight: 800, lineHeight: 1 },
   statLabel: { fontSize: 12, color: '#999', textAlign: 'center' },
   section: { padding: '20px 20px 0' },
   sectionTitle: { fontSize: 15, fontWeight: 700, color: '#1a1a2e', margin: '0 0 12px' },
-  homeCard: {
-    background: 'white', borderRadius: 16,
-    padding: '16px', border: '1.5px solid',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-  },
+  homeCard: { background: 'white', borderRadius: 16, padding: '16px', border: '1.5px solid', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
   homeInfo: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
   homeName: { fontSize: 16, fontWeight: 700, color: '#1a1a2e' },
   inviteCode: { fontSize: 12, fontWeight: 700, padding: '4px 10px', borderRadius: 20 },
@@ -333,34 +302,13 @@ const styles = {
   membersLabel: { fontSize: 12, color: '#999', marginBottom: 8, display: 'block' },
   membersList: { display: 'flex', flexDirection: 'column', gap: 8 },
   memberRow: { display: 'flex', alignItems: 'center', gap: 10 },
-  memberAvatar: {
-    width: 36, height: 36, borderRadius: '50%',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    fontSize: 20, border: '1.5px solid',
-  },
+  memberAvatar: { width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, border: '1.5px solid' },
   memberName: { fontSize: 14, fontWeight: 600, color: '#1a1a2e' },
   themeGrid: { display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 8 },
-  themeBtn: {
-    width: 44, height: 44, borderRadius: '50%',
-    border: '3px solid transparent',
-    cursor: 'pointer', position: 'relative',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-  },
+  themeBtn: { width: 44, height: 44, borderRadius: '50%', border: '3px solid transparent', cursor: 'pointer', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' },
   themeBtnActive: { border: '3px solid white', outline: '3px solid #333' },
   themeCheck: { color: 'white', fontSize: 18, fontWeight: 700 },
   themeHint: { fontSize: 12, color: '#aaa', margin: '0' },
-  leaveBtn: {
-    width: '100%', padding: '14px',
-    background: '#FFF0F0', border: '1.5px solid #FFCCCC',
-    borderRadius: 12, color: '#CC4444',
-    fontSize: 15, fontWeight: 600, cursor: 'pointer',
-    marginBottom: 10,
-  },
-  logoutBtn: {
-    width: '100%', padding: '14px',
-    background: '#F5F5F5', border: '1.5px solid #EEEEEE',
-    borderRadius: 12, color: '#888',
-    fontSize: 15, fontWeight: 600, cursor: 'pointer',
-  },
+  leaveBtn: { width: '100%', padding: '14px', background: '#FFF0F0', border: '1.5px solid #FFCCCC', borderRadius: 12, color: '#CC4444', fontSize: 15, fontWeight: 600, cursor: 'pointer', marginBottom: 10 },
+  logoutBtn: { width: '100%', padding: '14px', background: '#F5F5F5', border: '1.5px solid #EEEEEE', borderRadius: 12, color: '#888', fontSize: 15, fontWeight: 600, cursor: 'pointer' },
 }
