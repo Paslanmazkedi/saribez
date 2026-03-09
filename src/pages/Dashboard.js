@@ -13,10 +13,10 @@ function getTodayStr() {
   return new Date().toISOString().split('T')[0]
 }
 
-export default function Dashboard({ user, home }) {
+export default function Dashboard({ user, home, theme, onProfileClick }) {
   const [tasks, setTasks] = useState([])
   const [completions, setCompletions] = useState([])
-  const [members, setMembers] = useState([])
+ const [members, setMembers] = useState([]) // eslint-disable-line no-unused-vars
   const [profiles, setProfiles] = useState({})
   const [currentDay, setCurrentDay] = useState(getTodayIndex())
   const [showAddTask, setShowAddTask] = useState(false)
@@ -32,7 +32,7 @@ export default function Dashboard({ user, home }) {
   // eslint-disable-next-line
   useEffect(() => {
     loadAll()
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function loadAll() {
     setLoading(true)
@@ -142,6 +142,7 @@ export default function Dashboard({ user, home }) {
           <div style={styles.inviteCode}>
             Davet: <strong>{home.invite_code}</strong>
           </div>
+          <button style={styles.profileBtn} onClick={onProfileClick}>👤</button>
           <button style={styles.logoutBtn} onClick={() => supabase.auth.signOut()}>Çıkış</button>
         </div>
       </div>
@@ -297,6 +298,11 @@ const styles = {
   headerTitle: { fontSize: 20, fontWeight: 700 },
   headerRight: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 },
   inviteCode: { fontSize: 12, color: '#f0a500', background: 'rgba(240,165,0,0.15)', padding: '4px 10px', borderRadius: 20 },
+  profileBtn: {
+  background: 'rgba(255,255,255,0.15)', border: 'none',
+  color: 'white', borderRadius: 10, padding: '6px 10px',
+  fontSize: 18, cursor: 'pointer',
+},
   logoutBtn: { background: 'none', border: 'none', color: '#888', fontSize: 12, cursor: 'pointer' },
   dayTabs: { display: 'flex', padding: '16px 16px 0', gap: 4, overflowX: 'auto' },
   dayTab: {
