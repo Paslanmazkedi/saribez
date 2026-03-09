@@ -67,7 +67,6 @@ export default function Dashboard({ user, home, theme, onProfileClick }) {
       const profileMap = {}
       profilesData?.forEach(p => profileMap[p.id] = p)
       setProfiles(profileMap)
-      setMembers(membersData)
     }
 
     setTasks(tasksData || [])
