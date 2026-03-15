@@ -22,7 +22,7 @@ function getTodayStr() {
   return new Date().toISOString().split('T')[0]
 }
 
-export default function Dashboard({ user, home, theme: themePrimary, onProfileClick }) {
+export default function Weekly({ user, home, theme: themePrimary }) {
   const theme = THEMES.find(t => t.primary === themePrimary) || THEMES[0]
 
   const [tasks, setTasks] = useState([])
@@ -37,6 +37,14 @@ export default function Dashboard({ user, home, theme: themePrimary, onProfileCl
   const [taskDays, setTaskDays] = useState([1, 2, 3, 4, 5, 6, 7])
   const [taskAssigned, setTaskAssigned] = useState('')
   const [saving, setSaving] = useState(false)
+
+  // Edit/delete
+  const [editingTask, setEditingTask] = useState(null)
+  const [deleteModal, setDeleteModal] = useState(null) // silinecek task
+  const [editName, setEditName] = useState('')
+  const [editNote, setEditNote] = useState('')
+  const [editDays, setEditDays] = useState([])
+  const [editAssigned, setEditAssigned] = useState('')
 
   useEffect(() => { loadAll() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -65,7 +73,6 @@ export default function Dashboard({ user, home, theme: themePrimary, onProfileCl
         .from('profiles')
         .select('*')
         .in('id', userIds)
-
       const profileMap = {}
       profilesData?.forEach(p => profileMap[p.id] = p)
       setProfiles(profileMap)
@@ -111,6 +118,56 @@ export default function Dashboard({ user, home, theme: themePrimary, onProfileCl
     loadAll()
   }
 
+  async function deleteTask(type) {
+    const task = deleteModal
+    if (!task) return
+    if (type === 'day') {
+      const newDays = task.days_of_week.map(Number).filter(d => d !== currentDay + 1)
+      if (newDays.length === 0) {
+        await supabase.from('tasks').update({ is_active: false }).eq('id', task.id)
+        setTasks(tasks.filter(t => t.id !== task.id))
+      } else {
+        await supabase.from('tasks').update({ days_of_week: newDays }).eq('id', task.id)
+        setTasks(tasks.map(t => t.id === task.id ? { ...t, days_of_week: newDays } : t))
+      }
+    } else {
+      await supabase.from('tasks').update({ is_active: false }).eq('id', task.id)
+      setTasks(tasks.filter(t => t.id !== task.id))
+    }
+    setDeleteModal(null)
+  }
+
+  async function saveEditTask() {
+    if (!editName.trim()) return
+    await supabase.from('tasks').update({
+      name: editName.trim(),
+      note: editNote.trim() || null,
+      assigned_to: editAssigned || null,
+      days_of_week: editDays.map(Number),
+    }).eq('id', editingTask.id)
+    setTasks(tasks.map(t => t.id === editingTask.id
+      ? { ...t, name: editName, note: editNote || null, assigned_to: editAssigned || null, days_of_week: editDays }
+      : t
+    ))
+    setEditingTask(null)
+  }
+
+  function startEdit(task) {
+    setEditingTask(task)
+    setEditName(task.name)
+    setEditNote(task.note || '')
+    setEditDays(task.days_of_week.map(Number))
+    setEditAssigned(task.assigned_to || '')
+  }
+
+  function toggleEditDay(day) {
+    if (editDays.includes(day)) {
+      setEditDays(editDays.filter(d => d !== day))
+    } else {
+      setEditDays([...editDays, day].sort((a, b) => a - b))
+    }
+  }
+
   function toggleDay(day) {
     if (taskDays.includes(day)) {
       setTaskDays(taskDays.filter(d => d !== day))
@@ -123,27 +180,72 @@ export default function Dashboard({ user, home, theme: themePrimary, onProfileCl
   const todayDone = todayTasks.filter(t => completions.find(c => c.task_id === t.id))
 
   if (loading) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', fontSize: 24, background: theme.bg }}>⏳</div>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, fontSize: 24, background: theme.bg }}>⏳</div>
   )
 
   return (
     <div style={{ ...styles.container, background: theme.bg }}>
-      {/* Header */}
-      <div style={{ ...styles.header, background: theme.dark }}>
-        <div>
-          <div style={styles.headerSub}>🧹 Sarı Bez</div>
-          <div style={styles.headerTitle}>{home.name}</div>
-        </div>
-        <div style={styles.headerRight}>
-          <div style={{ ...styles.inviteCode, color: theme.primary, background: theme.primary + '22' }}>
-            Davet: <strong>{home.invite_code}</strong>
+
+      {/* Edit modal */}
+      {editingTask && (
+        <div style={styles.modalOverlay} onClick={() => setEditingTask(null)}>
+          <div style={styles.modal} onClick={e => e.stopPropagation()}>
+            <h3 style={styles.modalTitle}>Görevi Düzenle</h3>
+            <input style={styles.input} value={editName} onChange={e => setEditName(e.target.value)} placeholder="Görev adı" />
+            <input style={styles.input} value={editNote} onChange={e => setEditNote(e.target.value)} placeholder="Not (isteğe bağlı)" />
+            <div style={styles.formLabel}>Hangi günler?</div>
+            <div style={styles.dayPicker}>
+              {DAYS.map((d, i) => (
+                <button
+                  key={i}
+                  style={{
+                    ...styles.dayPickerBtn,
+                    ...(editDays.includes(i + 1) ? { background: theme.primary, borderColor: theme.primary, color: 'white' } : {})
+                  }}
+                  onClick={() => toggleEditDay(i + 1)}
+                >
+                  {d}
+                </button>
+              ))}
+            </div>
+            <div style={styles.formLabel}>Görevli</div>
+            <select style={styles.input} value={editAssigned} onChange={e => setEditAssigned(e.target.value)}>
+              <option value="">Herkes</option>
+              {Object.values(profiles).map(p => (
+                <option key={p.id} value={p.id}>{p.avatar_emoji || '😊'} {p.display_name}</option>
+              ))}
+            </select>
+            <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+              <button style={{ ...styles.saveBtn, background: theme.primary }} onClick={saveEditTask}>Kaydet</button>
+              <button style={styles.cancelBtn} onClick={() => setEditingTask(null)}>İptal</button>
+            </div>
           </div>
-          <div style={styles.headerBtns}>
-            <button style={styles.profileBtn} onClick={onProfileClick}>👤</button>
-            <button style={styles.logoutBtn} onClick={() => supabase.auth.signOut()}>Çıkış</button>
-          </div>
         </div>
+      )}
+
+      {/* Silme modal */}
+{deleteModal && (
+  <div style={styles.modalOverlay} onClick={() => setDeleteModal(null)}>
+    <div style={styles.modal} onClick={e => e.stopPropagation()}>
+      <div style={styles.modalHeader}>
+        <h3 style={styles.modalTitle}>Görevi Sil</h3>
+        <button style={styles.modalClose} onClick={() => setDeleteModal(null)}>✕</button>
       </div>
+      <p style={styles.modalDesc}>
+        <strong>"{deleteModal.name}"</strong> görevini nasıl silmek istiyorsun?
+      </p>
+      <button style={styles.deleteDayBtn} onClick={() => deleteTask('day')}>
+        📅 Sadece {DAYS_FULL[currentDay]} gününden kaldır
+      </button>
+      <button style={styles.deleteAllBtn} onClick={() => deleteTask('all')}>
+        🗑️ Tüm haftadan sil
+      </button>
+      <button style={styles.cancelBtn} onClick={() => setDeleteModal(null)}>
+        İptal
+      </button>
+    </div>
+  </div>
+)}
 
       {/* Gün seçici */}
       <div style={styles.dayTabs}>
@@ -190,20 +292,17 @@ export default function Dashboard({ user, home, theme: themePrimary, onProfileCl
           const completedProfile = completedBy ? profiles[completedBy.completed_by] : null
 
           return (
-            <div
-              key={task.id}
-              style={{ ...styles.taskItem, ...(done ? styles.taskDone : {}) }}
-              onClick={() => toggleTask(task)}
-            >
-              <div style={{
-                ...styles.checkbox,
-                ...(done
-                  ? { background: theme.primary, borderColor: theme.primary }
-                  : { borderColor: theme.primary + '66' })
-              }}>
+            <div key={task.id} style={{ ...styles.taskItem, ...(done ? styles.taskDone : {}) }}>
+              <div
+                style={{
+                  ...styles.checkbox,
+                  ...(done ? { background: theme.primary, borderColor: theme.primary } : { borderColor: theme.primary + '66' })
+                }}
+                onClick={() => toggleTask(task)}
+              >
                 {done && '✓'}
               </div>
-              <div style={styles.taskInfo}>
+              <div style={styles.taskInfo} onClick={() => toggleTask(task)}>
                 <div style={styles.taskName}>{task.name}</div>
                 {task.note && <div style={styles.taskNote}>{task.note}</div>}
                 {completedProfile && (
@@ -211,12 +310,17 @@ export default function Dashboard({ user, home, theme: themePrimary, onProfileCl
                     ✓ {completedProfile.display_name} tamamladı
                   </div>
                 )}
+                {assignedProfile && (
+                  <div style={{ ...styles.assignedBadge, background: theme.primary + '22', color: theme.primary }}>
+                    {assignedProfile.avatar_emoji || '😊'} {assignedProfile.display_name}
+                  </div>
+                )}
               </div>
-              {assignedProfile && (
-                <div style={{ ...styles.assignedBadge, background: theme.primary + '22', color: theme.primary }}>
-                  {assignedProfile.avatar_emoji || '😊'} {assignedProfile.display_name}
-                </div>
-              )}
+              {/* Düzenle / Sil */}
+             <div style={styles.taskActions} onClick={e => e.stopPropagation()}>
+  <button style={styles.editBtn} onClick={() => startEdit(task)}>✏️</button>
+  <button style={styles.deleteBtn} onClick={() => setDeleteModal(task)}>🗑️</button>
+</div>
             </div>
           )
         })}
@@ -230,7 +334,7 @@ export default function Dashboard({ user, home, theme: themePrimary, onProfileCl
 
       {showAddTask && (
         <div style={styles.addForm}>
-          <h3 style={styles.formTitle}>Yeni Görev</h3>
+          <h3 style={styles.formTitle}>Yeni Haftalık Görev</h3>
           <input style={styles.input} placeholder="Görev adı" value={taskName} onChange={e => setTaskName(e.target.value)} />
           <input style={styles.input} placeholder="Not (isteğe bağlı)" value={taskNote} onChange={e => setTaskNote(e.target.value)} />
           <div style={styles.formLabel}>Hangi günler?</div>
@@ -268,15 +372,7 @@ export default function Dashboard({ user, home, theme: themePrimary, onProfileCl
 }
 
 const styles = {
-  container: { minHeight: '100vh', fontFamily: 'sans-serif', paddingBottom: 40 },
-  header: { color: 'white', padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
-  headerSub: { fontSize: 12, color: '#aaa', marginBottom: 2 },
-  headerTitle: { fontSize: 20, fontWeight: 700 },
-  headerRight: { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 },
-  headerBtns: { display: 'flex', gap: 8, alignItems: 'center' },
-  inviteCode: { fontSize: 12, padding: '4px 10px', borderRadius: 20 },
-  profileBtn: { background: 'rgba(255,255,255,0.15)', border: 'none', color: 'white', borderRadius: 10, padding: '6px 10px', fontSize: 18, cursor: 'pointer' },
-  logoutBtn: { background: 'none', border: 'none', color: '#888', fontSize: 12, cursor: 'pointer' },
+  container: { flex: 1, fontFamily: 'sans-serif', overflowY: 'auto' },
   dayTabs: { display: 'flex', padding: '16px 16px 0', gap: 4, overflowX: 'auto' },
   dayTab: { flex: 1, padding: '8px 4px', border: 'none', background: 'transparent', fontSize: 13, fontWeight: 500, color: '#8a8a9a', cursor: 'pointer', borderBottom: '3px solid transparent', position: 'relative', minWidth: 40 },
   dayTabActive: { fontWeight: 700 },
@@ -287,18 +383,21 @@ const styles = {
   progressCount: { fontSize: 13, color: '#8a8a9a' },
   progressBar: { height: 6, background: '#e8e2da', borderRadius: 99, overflow: 'hidden' },
   progressFill: { height: '100%', borderRadius: 99, transition: 'width 0.3s' },
-  taskList: { padding: '8px 16px', display: 'flex', flexDirection: 'column', gap: 8 },
-  taskItem: { display: 'flex', alignItems: 'center', gap: 12, background: 'white', borderRadius: 14, padding: '14px 16px', border: '1.5px solid #e8e2da', cursor: 'pointer', transition: 'all 0.15s' },
+  taskList: { padding: '8px 16px', display: 'flex', flexDirection: 'column', gap: 8, paddingBottom: 24 },
+  taskItem: { display: 'flex', alignItems: 'center', gap: 12, background: 'white', borderRadius: 14, padding: '14px 16px', border: '1.5px solid #e8e2da', transition: 'all 0.15s' },
   taskDone: { opacity: 0.4 },
-  checkbox: { width: 24, height: 24, borderRadius: 7, border: '2px solid', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, color: 'white', flexShrink: 0 },
-  taskInfo: { flex: 1 },
+  checkbox: { width: 24, height: 24, borderRadius: 7, border: '2px solid', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, color: 'white', flexShrink: 0, cursor: 'pointer' },
+  taskInfo: { flex: 1, cursor: 'pointer' },
   taskName: { fontSize: 15, fontWeight: 500, color: '#1a1a2e' },
   taskNote: { fontSize: 12, color: '#8a8a9a', marginTop: 2 },
   completedBy: { fontSize: 11, marginTop: 3 },
-  assignedBadge: { fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 20 },
+  assignedBadge: { fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 20, display: 'inline-block', marginTop: 4 },
+  taskActions: { display: 'flex', gap: 4, flexShrink: 0 },
+  editBtn: { background: '#f5f5f5', border: 'none', borderRadius: 8, padding: '6px 8px', cursor: 'pointer', fontSize: 14 },
+  deleteBtn: { background: '#fff0f0', border: 'none', borderRadius: 8, padding: '6px 8px', cursor: 'pointer', fontSize: 14 },
   emptyState: { textAlign: 'center', padding: 48, color: '#8a8a9a', fontSize: 16 },
-  addBtn: { margin: '16px 16px 0', width: 'calc(100% - 32px)', padding: 14, color: 'white', border: 'none', borderRadius: 14, fontSize: 15, fontWeight: 600, cursor: 'pointer' },
-  addForm: { margin: '16px', background: 'white', borderRadius: 16, padding: '20px', border: '1.5px solid #e8e2da', display: 'flex', flexDirection: 'column', gap: 10 },
+  addBtn: { margin: '0 16px', width: 'calc(100% - 32px)', padding: 14, color: 'white', border: 'none', borderRadius: 14, fontSize: 15, fontWeight: 600, cursor: 'pointer' },
+  addForm: { margin: '0 16px 16px', background: 'white', borderRadius: 16, padding: '20px', border: '1.5px solid #e8e2da', display: 'flex', flexDirection: 'column', gap: 10 },
   formTitle: { fontSize: 16, fontWeight: 700, color: '#1a1a2e', margin: 0 },
   formLabel: { fontSize: 12, fontWeight: 600, color: '#8a8a9a', textTransform: 'uppercase', letterSpacing: 1 },
   input: { padding: '11px 14px', borderRadius: 10, border: '1.5px solid #e8e2da', fontSize: 14, outline: 'none', fontFamily: 'sans-serif' },
@@ -306,4 +405,13 @@ const styles = {
   dayPickerBtn: { flex: 1, padding: '8px 4px', borderRadius: 8, border: '1.5px solid #e8e2da', background: 'white', fontSize: 12, fontWeight: 500, color: '#8a8a9a', cursor: 'pointer' },
   saveBtn: { flex: 1, padding: 12, borderRadius: 10, border: 'none', color: 'white', fontSize: 14, fontWeight: 600, cursor: 'pointer' },
   cancelBtn: { flex: 1, padding: 12, borderRadius: 10, border: '1.5px solid #e8e2da', background: 'white', color: '#8a8a9a', fontSize: 14, cursor: 'pointer' },
+  cancelBtn: { flex: 1, padding: 12, borderRadius: 10, border: '1.5px solid #e8e2da', background: 'white', color: '#8a8a9a', fontSize: 14, cursor: 'pointer' },
+  modalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+  modalClose: { background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: '#999', padding: '0 4px' },
+  modalDesc: { fontSize: 14, color: '#555', margin: '4px 0 8px', lineHeight: 1.5 },
+  deleteDayBtn: { width: '100%', padding: 13, borderRadius: 12, border: '1.5px solid #e8e2da', background: 'white', fontSize: 14, fontWeight: 600, cursor: 'pointer', textAlign: 'left', marginBottom: 8 },
+  deleteAllBtn: { width: '100%', padding: 13, borderRadius: 12, border: '1.5px solid #FFCCCC', background: '#FFF0F0', color: '#CC4444', fontSize: 14, fontWeight: 600, cursor: 'pointer', textAlign: 'left', marginBottom: 8 },
+  modalOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 20 },
+  modal: { background: 'white', borderRadius: 20, padding: 24, width: '100%', maxWidth: 400, display: 'flex', flexDirection: 'column', gap: 10 },
+  modalTitle: { fontSize: 17, fontWeight: 700, color: '#1a1a2e', margin: 0 },
 }
