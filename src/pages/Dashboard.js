@@ -405,7 +405,6 @@ const styles = {
   dayPickerBtn: { flex: 1, padding: '8px 4px', borderRadius: 8, border: '1.5px solid #e8e2da', background: 'white', fontSize: 12, fontWeight: 500, color: '#8a8a9a', cursor: 'pointer' },
   saveBtn: { flex: 1, padding: 12, borderRadius: 10, border: 'none', color: 'white', fontSize: 14, fontWeight: 600, cursor: 'pointer' },
   cancelBtn: { flex: 1, padding: 12, borderRadius: 10, border: '1.5px solid #e8e2da', background: 'white', color: '#8a8a9a', fontSize: 14, cursor: 'pointer' },
-  cancelBtn: { flex: 1, padding: 12, borderRadius: 10, border: '1.5px solid #e8e2da', background: 'white', color: '#8a8a9a', fontSize: 14, cursor: 'pointer' },
   modalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
   modalClose: { background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: '#999', padding: '0 4px' },
   modalDesc: { fontSize: 14, color: '#555', margin: '4px 0 8px', lineHeight: 1.5 },
