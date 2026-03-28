@@ -75,7 +75,10 @@ function App() {
       {/* Header */}
       <div style={{ ...styles.header, background: themeObj.dark }}>
         <div>
-          <div style={styles.headerSub}>🧹 Sarı Bez</div>
+          <div style={styles.headerSub}>
+  <img src="/logo512.png" alt="Sarı Bez" style={{ width: 20, height: 20, borderRadius: 4, marginRight: 4, verticalAlign: 'middle' }} />
+  Sarı Bez
+</div>
           <div style={styles.headerTitle}>{home.name}</div>
         </div>
         <div style={styles.headerRight}>

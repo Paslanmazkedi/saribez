@@ -1,85 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../supabaseClient'
 
-const SariBezLogo = ({ size = 80 }) => (
-  <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-    {/* Sarı bez — katlanmış kumaş görünümü */}
-    <defs>
-      <linearGradient id="bezGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#FFE566" />
-        <stop offset="50%" stopColor="#F0A500" />
-        <stop offset="100%" stopColor="#D4880A" />
-      </linearGradient>
-      <linearGradient id="bezGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#FFF3A3" />
-        <stop offset="100%" stopColor="#FFD700" />
-      </linearGradient>
-      <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-        <feDropShadow dx="2" dy="3" stdDeviation="3" floodColor="#D4880A" floodOpacity="0.4"/>
-      </filter>
-    </defs>
 
-    {/* Bezin ana gövdesi — katlanmış köşeli kumaş */}
-    <path
-      d="M15 30 Q18 20 30 18 L75 22 Q85 24 82 35 L78 70 Q76 80 65 82 L28 78 Q18 76 18 65 Z"
-      fill="url(#bezGrad)"
-      filter="url(#shadow)"
-    />
-
-    {/* Üst katlanma çizgisi */}
-    <path
-      d="M20 38 Q50 34 80 40"
-      stroke="#FFE566"
-      strokeWidth="2.5"
-      strokeLinecap="round"
-      fill="none"
-      opacity="0.8"
-    />
-
-    {/* Orta katlanma çizgisi */}
-    <path
-      d="M19 52 Q50 48 81 54"
-      stroke="#E09000"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      fill="none"
-      opacity="0.5"
-    />
-
-    {/* Alt katlanma */}
-    <path
-      d="M20 65 Q50 62 80 66"
-      stroke="#E09000"
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      fill="none"
-      opacity="0.4"
-    />
-
-    {/* Köşe kıvrımı — sağ üst */}
-    <path
-      d="M72 22 Q85 20 83 33 Q78 26 72 22Z"
-      fill="url(#bezGrad2)"
-      opacity="0.9"
-    />
-
-    {/* Köşe kıvrımı — sol alt */}
-    <path
-      d="M20 74 Q14 78 18 65 Q20 71 20 74Z"
-      fill="#D4880A"
-      opacity="0.6"
-    />
-
-    {/* Temizlik parlaması — sol üst */}
-    <circle cx="32" cy="32" r="3" fill="white" opacity="0.6" />
-    <circle cx="28" cy="38" r="1.5" fill="white" opacity="0.4" />
-
-    {/* Küçük köpük noktaları */}
-    <circle cx="55" cy="28" r="2" fill="white" opacity="0.5" />
-    <circle cx="62" cy="55" r="1.5" fill="white" opacity="0.3" />
-    <circle cx="38" cy="68" r="2" fill="white" opacity="0.35" />
-  </svg>
-)
 
 export default function Auth() {
   const [isLogin, setIsLogin] = useState(true)
@@ -123,8 +45,8 @@ export default function Auth() {
         {/* Logo alanı */}
         <div style={styles.logoWrap}>
           <div style={styles.logoCircle}>
-            <SariBezLogo size={56} />
-          </div>
+  <img src="/logo512.png" alt="Sarı Bez" style={{ width: 70, height: 70, borderRadius: 12 }} />
+</div>
         </div>
 
         {/* Başlık */}
