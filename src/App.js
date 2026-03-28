@@ -5,6 +5,7 @@ import HomeSetup from './pages/HomeSetup'
 import Weekly from './pages/Dashboard'
 import General from './pages/General'
 import Profile from './pages/Profile'
+import Housemates from './pages/Housemates'
 
 const THEMES = [
   { primary: '#F0A500', bg: '#FFF8E1', dark: '#1a1a2e' },
@@ -20,7 +21,7 @@ function App() {
   const [home, setHome] = useState(null)
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('general') // 'general' | 'weekly'
-  const [page, setPage] = useState('main') // 'main' | 'profile'
+  const [page, setPage] = useState('main') // 'main' | 'profile' | 'housemates'
   const [theme, setTheme] = useState(() => localStorage.getItem('saribez_theme') || '#F0A500')
 
   const themeObj = THEMES.find(t => t.primary === theme) || THEMES[0]
@@ -61,13 +62,22 @@ function App() {
 
   if (page === 'profile') return (
     <Profile
-      user={session.user}
-      home={home}
-      onBack={() => setPage('main')}
-      onThemeChange={handleThemeChange}
-      currentTheme={theme}
-    />
+  user={session.user}
+  home={home}
+  onBack={() => setPage('main')}
+  onThemeChange={handleThemeChange}
+  currentTheme={theme}
+  onViewMembers={() => setPage('housemates')}
+/>
   )
+  if (page === 'housemates') return (
+  <Housemates
+    user={session.user}
+    home={home}
+    theme={theme}
+    onBack={() => setPage('main')}
+  />
+)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', height: '100vh', background: themeObj.bg, overflow: 'hidden' }}>

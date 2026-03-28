@@ -16,7 +16,7 @@ const THEMES = [
   { name: 'Mercan', primary: '#F97316', bg: '#FFF5F0', dark: '#2E1A0A' },
 ]
 
-export default function Profile({ user, home, onBack, onThemeChange, currentTheme }) {
+export default function Profile({ user, home, onBack, onThemeChange, currentTheme, onViewMembers }) {
   const [profile, setProfile] = useState(null)
   const [members, setMembers] = useState([])
   const [completionCount, setCompletionCount] = useState(0)
@@ -205,11 +205,17 @@ export default function Profile({ user, home, onBack, onThemeChange, currentThem
         <h3 style={styles.sectionTitle}>🏠 Ev</h3>
         <div style={{ ...styles.homeCard, borderColor: theme.primary + '44' }}>
           <div style={styles.homeInfo}>
-            <span style={styles.homeName}>{home.name}</span>
-            <span style={{ ...styles.inviteCode, background: theme.primary + '22', color: theme.primary }}>
-              Davet: {home.invite_code}
-            </span>
-          </div>
+  <span style={styles.homeName}>{home.name}</span>
+  <span style={{ ...styles.inviteCode, background: theme.primary + '22', color: theme.primary }}>
+    Davet: {home.invite_code}
+  </span>
+</div>
+<button
+  style={{ ...styles.viewMembersBtn, color: theme.primary, borderColor: theme.primary + '44' }}
+  onClick={onViewMembers}
+>
+  👥 Ev sakinlerini gör
+</button>
           {otherMembers.length > 0 && (
             <div style={styles.membersSection}>
               <span style={styles.membersLabel}>Ev arkadaşları</span>
@@ -295,7 +301,7 @@ const styles = {
   section: { padding: '20px 20px 0' },
   sectionTitle: { fontSize: 15, fontWeight: 700, color: '#1a1a2e', margin: '0 0 12px' },
   homeCard: { background: 'white', borderRadius: 16, padding: '16px', border: '1.5px solid', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' },
-  homeInfo: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  homeInfo: { display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 10, marginBottom: 12 },
   homeName: { fontSize: 16, fontWeight: 700, color: '#1a1a2e' },
   inviteCode: { fontSize: 12, fontWeight: 700, padding: '4px 10px', borderRadius: 20 },
   membersSection: { borderTop: '1px solid #f0f0f0', paddingTop: 12 },
@@ -311,4 +317,5 @@ const styles = {
   themeHint: { fontSize: 12, color: '#aaa', margin: '0' },
   leaveBtn: { width: '100%', padding: '14px', background: '#FFF0F0', border: '1.5px solid #FFCCCC', borderRadius: 12, color: '#CC4444', fontSize: 15, fontWeight: 600, cursor: 'pointer', marginBottom: 10 },
   logoutBtn: { width: '100%', padding: '14px', background: '#F5F5F5', border: '1.5px solid #EEEEEE', borderRadius: 12, color: '#888', fontSize: 15, fontWeight: 600, cursor: 'pointer' },
+  viewMembersBtn: { width: '100%', padding: 11, borderRadius: 10, border: '1.5px solid', background: 'white', fontSize: 14, fontWeight: 600, cursor: 'pointer', marginTop: 10 },
 }
